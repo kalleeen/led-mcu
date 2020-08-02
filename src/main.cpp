@@ -99,13 +99,13 @@ void callback(char *topic, byte *payload, unsigned int length)
     startSunrise(intPayload);
     client.publish(USER_MQTT_CLIENT_NAME "/effect", "sunrise", true);
     client.publish(USER_MQTT_CLIENT_NAME "/effectState", "sunrise", true);
-    client.publish(USER_MQTT_CLIENT_NAME "/state", "ON");
+    client.publish(USER_MQTT_CLIENT_NAME "/state", "ON", true);
   }
   else if (newTopic == USER_MQTT_CLIENT_NAME "/white")
   {
     stopEffect();
     effect = eStable;
-    client.publish(USER_MQTT_CLIENT_NAME "/whiteState", charPayload);
+    client.publish(USER_MQTT_CLIENT_NAME "/whiteState", charPayload, true);
     client.publish(USER_MQTT_CLIENT_NAME "/effect", "stable", true);
     client.publish(USER_MQTT_CLIENT_NAME "/effectState", "stable", true);
     white = intPayload;
@@ -118,7 +118,7 @@ void callback(char *topic, byte *payload, unsigned int length)
   {
     stopEffect();
     effect = eStable;
-    client.publish(USER_MQTT_CLIENT_NAME "/colorState", charPayload);
+    client.publish(USER_MQTT_CLIENT_NAME "/colorState", charPayload, true);
     client.publish(USER_MQTT_CLIENT_NAME "/effect", "stable", true);
     client.publish(USER_MQTT_CLIENT_NAME "/effectState", "stable", true);
     int firstIndex = newPayload.indexOf(',');
@@ -177,15 +177,15 @@ void reconnect()
       if (client.connect(mqtt_client_name, mqtt_user, mqtt_pass, USER_MQTT_CLIENT_NAME "/availability", 0, true, "offline"))
       {
         Serial.println("connected");
-        client.publish(USER_MQTT_CLIENT_NAME "/availability", "online");
+        client.publish(USER_MQTT_CLIENT_NAME "/availability", "online", true);
         if (boot == true)
         {
-          client.publish(USER_MQTT_CLIENT_NAME "/checkIn", "Rebooted");
+          client.publish(USER_MQTT_CLIENT_NAME "/checkIn", "rebooted");
           boot = false;
         }
         else if (boot == false)
         {
-          client.publish(USER_MQTT_CLIENT_NAME "/checkIn", "Reconnected");
+          client.publish(USER_MQTT_CLIENT_NAME "/checkIn", "reconnected");
         }
         client.subscribe(USER_MQTT_CLIENT_NAME "/command");
         client.subscribe(USER_MQTT_CLIENT_NAME "/effect");
