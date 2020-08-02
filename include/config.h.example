@@ -1,0 +1,11 @@
+#define USER_SSID "SomeNetwork"
+#define USER_PASSWORD "hunter1"
+#define USER_MQTT_SERVER "some.server.example.com"
+#define USER_MQTT_PORT 1883
+#define USER_MQTT_USERNAME "some_user"
+#define USER_MQTT_PASSWORD "hunter2"
+#define USER_MQTT_CLIENT_NAME "LED_MCU"
+
+#define NUM_LEDS 160   // number of LEDs in the strip
+#define BRIGHTNESS 255 // strip brightness 255 max
+#define SUNSIZE 30     // percentage of the strip that is the "sun"
