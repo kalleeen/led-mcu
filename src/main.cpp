@@ -174,16 +174,16 @@ void reconnect()
     {
       Serial.print("Attempting MQTT connection...");
       // Attempt to connect
-      if (client.connect(mqtt_client_name, mqtt_user, mqtt_pass))
+      if (client.connect(mqtt_client_name, mqtt_user, mqtt_pass, USER_MQTT_CLIENT_NAME "/availability", 0, true, "offline"))
       {
         Serial.println("connected");
-        // Once connected, publish an announcement...
+        client.publish(USER_MQTT_CLIENT_NAME "/availability", "online");
         if (boot == true)
         {
           client.publish(USER_MQTT_CLIENT_NAME "/checkIn", "Rebooted");
           boot = false;
         }
-        if (boot == false)
+        else if (boot == false)
         {
           client.publish(USER_MQTT_CLIENT_NAME "/checkIn", "Reconnected");
         }
