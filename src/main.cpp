@@ -25,6 +25,7 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 bool boot = true;
 char charPayload[50];
+int sunriseDuration = NUM_LEDS;
 
 uint8_t red = 0;
 uint8_t green = 0;
@@ -88,7 +89,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     else if (strcmp(charPayload, "sunrise") == 0)
     {
       effect = eSunrise;
-      startSunrise(NUM_LEDS);
+      startSunrise(sunriseDuration);
     }
     client.publish(USER_MQTT_CLIENT_NAME "/effectState", charPayload, true);
   }
@@ -96,6 +97,7 @@ void callback(char *topic, byte *payload, unsigned int length)
   {
     stopEffect();
     effect = eSunrise;
+    sunriseDuration = intPayload;
     startSunrise(intPayload);
     client.publish(USER_MQTT_CLIENT_NAME "/effect", "sunrise", true);
     client.publish(USER_MQTT_CLIENT_NAME "/effectState", "sunrise", true);
