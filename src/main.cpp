@@ -20,12 +20,14 @@ SimpleTimer timer;
 NeoPixelBus<NeoGrbwFeature, Neo800KbpsMethod> strip(NUM_LEDS);
 RgbwColor stripLeds[NUM_LEDS] = {};
 Effect effect = eOff;
+PartialLitMode partialLitMode = eSides;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 bool boot = true;
 char charPayload[50];
 int sunriseDuration = NUM_LEDS;
+int percentageLit = 100;
 
 uint8_t red = 0;
 uint8_t green = 0;
@@ -60,10 +62,7 @@ void callback(char *topic, byte *payload, unsigned int length)
       {
         stopEffect();
         effect = eStable;
-        for (int i = 0; i < NUM_LEDS; i++)
-        {
-          stripLeds[i] = RgbwColor(red, green, blue, white);
-        }
+        lightLeds();
         client.publish(USER_MQTT_CLIENT_NAME "/effect", "stable", true);
         client.publish(USER_MQTT_CLIENT_NAME "/effectState", "stable", true);
       }
@@ -76,10 +75,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     if (strcmp(charPayload, "stable") == 0)
     {
       effect = eStable;
-      for (int i = 0; i < NUM_LEDS; i++)
-      {
-        stripLeds[i] = RgbwColor(red, green, blue, white);
-      }
+      lightLeds();
     }
     else if (strcmp(charPayload, "colorloop") == 0)
     {
@@ -111,10 +107,7 @@ void callback(char *topic, byte *payload, unsigned int length)
     client.publish(USER_MQTT_CLIENT_NAME "/effect", "stable", true);
     client.publish(USER_MQTT_CLIENT_NAME "/effectState", "stable", true);
     white = intPayload;
-    for (int i = 0; i < NUM_LEDS; i++)
-    {
-      stripLeds[i] = RgbwColor(red, green, blue, white);
-    }
+    lightLeds();
   }
   else if (newTopic == USER_MQTT_CLIENT_NAME "/color")
   {
@@ -131,11 +124,39 @@ void callback(char *topic, byte *payload, unsigned int length)
       red = newPayload.substring(0, firstIndex).toInt();
       green = newPayload.substring(firstIndex + 1, lastIndex).toInt();
       blue = newPayload.substring(lastIndex + 1).toInt();
-      for (int i = 0; i < NUM_LEDS; i++)
-      {
-        stripLeds[i] = RgbwColor(red, green, blue, white);
-      }
+      lightLeds();
     }
+  }
+  else if (newTopic == USER_MQTT_CLIENT_NAME "/percentageLit")
+  {
+    percentageLit = newPayload.toInt();
+    client.publish(USER_MQTT_CLIENT_NAME "/percentageLitState", charPayload, true);
+    lightLeds();
+  }
+  else if (newTopic == USER_MQTT_CLIENT_NAME "/partialLitMode")
+  {
+    if (strcmp(charPayload, "sides") == 0)
+    {
+      partialLitMode = eSides;
+    }
+    else if (strcmp(charPayload, "middle") == 0)
+    {
+      partialLitMode = eMiddle;
+    }
+    else if (strcmp(charPayload, "near") == 0)
+    {
+      partialLitMode = eNear;
+    }
+    else if (strcmp(charPayload, "far") == 0)
+    {
+      partialLitMode = eFar;
+    }
+    else if (strcmp(charPayload, "even") == 0)
+    {
+      partialLitMode = eEven;
+    }
+    client.publish(USER_MQTT_CLIENT_NAME "/partialLitModeState", charPayload, true);
+    lightLeds();
   }
 }
 
@@ -194,6 +215,8 @@ void reconnect()
         client.subscribe(USER_MQTT_CLIENT_NAME "/color");
         client.subscribe(USER_MQTT_CLIENT_NAME "/white");
         client.subscribe(USER_MQTT_CLIENT_NAME "/wakeAlarm");
+        client.subscribe(USER_MQTT_CLIENT_NAME "/percentageLit");
+        client.subscribe(USER_MQTT_CLIENT_NAME "/partialLitMode");
       }
       else
       {
@@ -260,4 +283,91 @@ void loop()
   }
 
   strip.Show();
+}
+
+void lightLeds()
+{
+  float enabledLedCount = ((float)percentageLit/100)*NUM_LEDS;
+  int enabledLedCountSides = enabledLedCount/2;
+  if (percentageLit == 100)
+  {
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      stripLeds[i] = RgbwColor(red, green, blue, white);
+    }
+  }
+  else if (partialLitMode == eSides)
+  {
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      if (i >= enabledLedCountSides && i <= (NUM_LEDS - enabledLedCountSides))
+      {
+        stripLeds[i] = RgbwColor(0, 0, 0, 0);
+      }
+      else
+      {
+        stripLeds[i] = RgbwColor(red, green, blue, white);
+      }
+    }
+  }
+  else if (partialLitMode == eMiddle)
+  {
+    float middle = NUM_LEDS / (float)2;
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      if (i > (middle - enabledLedCountSides) && i < (middle + enabledLedCountSides))
+      {
+        stripLeds[i] = RgbwColor(red, green, blue, white);
+      }
+      else
+      {
+        stripLeds[i] = RgbwColor(0, 0, 0, 0);
+      }
+    }
+  }
+  else if (partialLitMode == eNear)
+  {
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      if (i > enabledLedCount)
+      {
+        stripLeds[i] = RgbwColor(0, 0, 0, 0);
+      }
+      else
+      {
+        stripLeds[i] = RgbwColor(red, green, blue, white);
+      }
+    }
+  }
+  else if (partialLitMode == eFar)
+  {
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      if (i < NUM_LEDS - enabledLedCount)
+      {
+        stripLeds[i] = RgbwColor(0, 0, 0, 0);
+      }
+      else
+      {
+        stripLeds[i] = RgbwColor(red, green, blue, white);
+      }
+    }
+  }
+  else if (partialLitMode == eEven)
+  {
+    int counter = 0;
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      counter = counter + percentageLit;
+      if (counter < 100)
+      {
+        stripLeds[i] = RgbwColor(0, 0, 0, 0);
+      }
+      else
+      {
+        counter = counter - 100;
+        stripLeds[i] = RgbwColor(red, green, blue, white);
+      }
+    }
+  }
 }
